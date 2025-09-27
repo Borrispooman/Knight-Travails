@@ -4,13 +4,12 @@ function arraysEqual(a, b) {
 }
 
 function arrayOfArraysContains(arrOfArrs, target) {
-  return arrOfArrs.some(
-    subArr =>
-      subArr.length === target.length &&
-      subArr.every((val, i) => val === target[i])
+  return arrOfArrs.some(subArr =>
+    Array.isArray(subArr) &&
+    subArr.length === target.length &&
+    subArr.every((val, i) => val === target[i])
   );
 }
-
 
 function isCoordinate(XY){
 	[x, y] = XY;	
@@ -48,12 +47,30 @@ function getAdjVertexs(XY){
 	return cleanVrtxs;
 }
 
+function XYtoIndex([x, y], width = 8) {
+  return x * width + y;
+}
 
-function explore(startXY, targetXY){
+function indexToXY(index, width = 8) {
+  const x = Math.floor(index / width);
+  const y = index % width;
+  return [x, y];
+}
 
-		const adjList = [];	//!!this is just an array of coordinates right now, its not functioning as an adjacencyList.
+function arrOfArrsIndexOf(arrOfArrs, target) {
+  for (let i = 0; i < arrOfArrs.length; i++) {
+    if (Array.isArray(arrOfArrs[i]) && arraysEqual(arrOfArrs[i], target)) {
+      return i;
+    }
+  }
+  return -1; 
+}
+
+function shortestPath(startXY, targetXY){
 
 		const visitedVertexes = [];
+	 
+		const parentPointers = {};
 
 		const queue = [];
 
@@ -63,7 +80,6 @@ function explore(startXY, targetXY){
 		while(queue.length > 0){
 
 			if(arraysEqual(queue[0], targetXY)){
-				adjList.push(queue[0]);
 				break;	
 			}
 
@@ -72,30 +88,45 @@ function explore(startXY, targetXY){
 				continue;
 			}
 
-			adjList.push(queue[0]);
-			visitedVertexes.push(queue[0]);
-
-
-			const nextSpaces = getAdjVertexs(queue[0]); //queue[0] is an arr in [x,y] format
+			const index = XYtoIndex(queue[0]);
+			const nextSpaces = getAdjVertexs(queue[0])
+			
+			if(arrayOfArraysContains(nextSpaces, targetXY)){
+				const childIndex = XYtoIndex(targetXY)
+					parentPointers[childIndex] = index;
+				break;
+			}
 
 			for(let i = 0;i < nextSpaces.length; i++){
-
 				if(nextSpaces[i] !== null){
+					const childIndex = XYtoIndex(nextSpaces[i])
+					if(parentPointers[childIndex]=== undefined){
+						parentPointers[childIndex] = index;
+					};
 					queue.push(nextSpaces[i]);
 				}
 			};
+			visitedVertexes.push(queue[0]);
 			queue.shift();
 		};
-		return adjList;
+
+		const path = [];
+		
+		path.push(targetXY);
+		let parentIndex = parentPointers[XYtoIndex(targetXY).toString()]
+		while(true){
+			if(arraysEqual(indexToXY(parentIndex), startXY)){
+				path.push(indexToXY(parentIndex));
+				break;
+			}
+			path.push(indexToXY(parentIndex))
+			parentIndex = parentPointers[parentIndex.toString()];
+		}
+		return path.reverse();
 };
-
-
 
 function knightMoves(startXY, targetXY){
-	const adjacencyList = explore(startXY, targetXY);	
-	console.log(adjacencyList);
+	console.log(shortestPath(startXY, targetXY));	
 };
 
-
-
-knightMoves([0,0], [7,7]);
+knightMoves([0,0], [7,7])
